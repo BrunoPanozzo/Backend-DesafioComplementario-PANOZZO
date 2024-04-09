@@ -1,25 +1,27 @@
 const { Router } = require('express')
-const ProductManager = require('../ProductManager')
+// const ProductManager = require('../dao/dbManagers/ProductManager')
 
 const router = Router()
-const fileName = `${__dirname}/../../products.json`
-const productManager = new ProductManager(fileName)
+
+// const fileName = `${__dirname}/../../products.json`
+// const productManager = new ProductManager(fileName)
 
 //endpoints
 
 router.get('/', async (req, res) => {
+    const productManager = req.app.get('productManager')
 
     let allProducts = await productManager.getProducts()
 
     const data = {        
         title: 'Real Time Products', 
-        scripts: ['realTimeProducts.js'],
-        styles: ['home.css', 'realTimeProducts.css'],
+        scripts: ['allProducts.js'],
+        styles: ['home.css', 'allProducts.css'],
         useWS: true,
         allProducts
     }
     
-    res.render('realTimeProducts', data)
+    res.render('realtimeproducts', data)
 })
 
 // router.post('/', async (req, res) => {
@@ -39,7 +41,7 @@ router.get('/', async (req, res) => {
 //                                     newProduct.category)
 
 //     //notificar a los demás browsers mediante WS
-//     req.app.get('wsServer').emit('newProduct', newProduct)
+//     req.app.get('io').emit('newProduct', newProduct)
 
 //     let allProducts = await productManager.getProducts()
 
@@ -53,13 +55,5 @@ router.get('/', async (req, res) => {
     
 //     res.render('realTimeProducts', data)
 // })
-
-//init methods
-
-const main = async () => {
-    await productManager.inicializar()
-}
-
-main()
 
 module.exports = router;

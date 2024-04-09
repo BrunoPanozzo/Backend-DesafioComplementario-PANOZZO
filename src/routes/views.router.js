@@ -1,7 +1,8 @@
 const { Router } = require('express')
-const ProductManager = require('../ProductManager')
+const ProductManager = require('../dao/fsManagers/ProductManager')
 
 const router = Router()
+
 const fileName = `${__dirname}/../../products.json`
 const productManager = new ProductManager(fileName)
 
@@ -18,15 +19,18 @@ router.get('/', async (req, res) => {
         allProducts
     }
     
-    res.render('home', data)
+    res.render('index', data)
 })
 
-//init methods
+router.get('/create', async (req, res) => {
+    const data = {
+        title: 'Create Product',
+        scripts: ['createProduct.js'],
+        styles: ['home.css'],
+        useWS: true
+    }
 
-const main = async () => {
-    await productManager.inicializar()
-}
-
-main()
+    res.render('createProduct', data)
+})
 
 module.exports = router;

@@ -1,14 +1,22 @@
+//definir los paquetes que se van a utilizar
 const express = require('express')
 const handlebars = require('express-handlebars')
+const mongoose = require('mongoose')
 const { Server } = require('socket.io')
 
-const { router: productRouter, productManager } = require('./routes/product.router')
-const cartRouter = require('./routes/cart.router')
-// const viewsRouter = require('./routes/views.router')
-const homeRouter = require('./routes/home.router')
+//definir los routers
+const productRouter = require('./routes/products.router')
+const cartRouter = require('./routes/carts.router')
+const viewsRouter = require('./routes/views.router')
 const realTimeProductsRouter = require('./routes/realTimeProducts.router')
-const createProductRouter = require('./routes/createProduct.router')
 
+//definir los Managers y Modelos
+const fsProductManager = require('./dao/fsManagers/ProductManager')
+const fsCartManager = require('./dao/fsManagers/CartManager')
+const dbProductManager = require('./dao/dbManagers/ProductManager')
+const dbCartManager = require('./dao/dbManagers/CartManager')
+
+//instanciar mi app
 const app = express()
 
 //configurar express para manejar formularios y JSON
@@ -24,53 +32,62 @@ app.set('view engine', 'handlebars')
 //configurar los routers
 app.use('/api/products', productRouter)
 app.use('/api/carts', cartRouter)
-app.use('/home', homeRouter)
+app.use('/', viewsRouter)
 app.use('/realtimeproducts', realTimeProductsRouter)
-app.use('/createproduct', createProductRouter)
 
-//crear un servidor HTTP
-const httpServer = app.listen(8080, () => {
-    console.log('Servidor listo escuchando en el puerto 8080')
-});
+const main = async () => {
 
-//crear un servidor WS
-const wsServer = new Server(httpServer)
-app.set('wsServer', wsServer)
+    //configurar mongoose
+    await mongoose.connect('mongodb+srv://coderUser:coderPassword@coderclustertest.y46cxod.mongodb.net/?retryWrites=true&w=majority&appName=CoderClustertest',
+        {
+            dbName: 'ecommerce'
+        })    
 
-//conexion de un nuevo cliente a mi servidor WS
-wsServer.on('connection', (clientSocket) => {
-    console.log(`Cliente conectado con ID: ${clientSocket.id}`)
+        //configurar cuál de los dos Managers está activo, son excluyentes
+//Manager con FileSystem
+// const productManager = new fsProductManager()
+// await productManager.inicializar()
+// app.set('productManager', productManager)
+// const cartManager = new fsCartManager()
+// await cartManager.inicializar()
+// app.set('cartManager', cartManager)
+//Manager con DataBaseSystem
+const productManager = new dbProductManager()
+await productManager.inicializar()
+app.set('productManager', productManager)
+const cartManager = new dbCartManager()
+await cartManager.inicializar()
+app.set('cartManager', cartManager)
 
-    clientSocket.on('saludo', (data) => {
-        console.log(data)
-    })
 
-    // clientSocket.on('newProduct', (product) => {
-    //     console.log('nuevo producto', product)
-    //     productManager.addProduct(product.title,
-    //                               product.description,
-    //                               +product.price,
-    //                               product.thumbnail,
-    //                               product.code,
-    //                               +product.stock,
-    //                               product.status,
-    //                               product.category)
-    //     .then(() => {
-    //         console.log(`El producto con código '${product.code}' se agregó exitosamente.`)
-    //         //avisar a todos los clientes
-    //         wsServer.emit('newProduct', product)
+    //crear un servidor HTTP
+    const httpServer = app.listen(8080, () => {
+        console.log('Servidor listo escuchando en el puerto 8080')
+    });
 
-    //     })
-    // })
+    //crear un servidor WS
+    const io = new Server(httpServer)
+    app.set('io', io)
+}
 
-    clientSocket.on('deleteProduct', async (idProd) => {
+main()
 
-        const id = parseInt(idProd)
-        await productManager.deleteProduct(id)
+// //conexion de un nuevo cliente a mi servidor WS
+// io.on('connection', (clientSocket) => {
+//     console.log(`Cliente conectado con ID: ${clientSocket.id}`)
 
-        console.log(`El producto con código '${id}' se eliminó exitosamente.`)
-        //avisar a todos los clientes
-        wsServer.emit('deleteProduct', idProd)
+//     clientSocket.on('saludo', (data) => {
+//         console.log(data)
+//     })
+    
+//     clientSocket.on('deleteProduct', async (idProd) => {
 
-    })
-})
+//         const id = parseInt(idProd)
+//         await productManager.deleteProduct(id)
+
+//         console.log(`El producto con código '${id}' se eliminó exitosamente.`)
+//         //avisar a todos los clientes
+//         io.emit('deleteProduct', idProd)
+
+//     })
+// })

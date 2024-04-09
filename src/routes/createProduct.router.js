@@ -1,11 +1,12 @@
 const { Router } = require('express')
-const ProductManager = require('../ProductManager')
+const ProductManager = require('../dao/fsManagers/ProductManager')
 
 const router = Router()
+
 const fileName = `${__dirname}/../../products.json`
 const productManager = new ProductManager(fileName)
 
-const { validateNewProduct }  = require('./product.router')
+const { validateNewProduct }  = require('./products.router')
 
 //endpoints
 
@@ -37,7 +38,7 @@ router.post('/', validateNewProduct, async (req, res) => {
                                     newProduct.category)
 
     //notificar a los demás browsers mediante WS
-    req.app.get('wsServer').emit('newProduct', newProduct)
+    req.app.get('io').emit('newProduct', newProduct)
      
     // // const data = {        
     // //     title: 'Real Time Products', 

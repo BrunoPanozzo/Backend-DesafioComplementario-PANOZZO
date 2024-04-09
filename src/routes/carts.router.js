@@ -1,6 +1,6 @@
 const { Router } = require('express')
-const CartManager = require('../CartManager');
-const ProductManager = require('../ProductManager')
+const CartManager = require('../dao/fsManagers/CartManager');
+const ProductManager = require('../dao/fsManagers/ProductManager')
 
 const router = Router()
 
@@ -97,14 +97,5 @@ router.post('/:cid/product/:pid', validateCart, validateProduct, async (req, res
     // HTTP 200 OK => carrito modificado exitosamente
     res.status(200).json(`Se agregaron ${quantity} producto/s con ID ${prodId} al carrito con ID ${cartId}.`)
 })
-
-//init methods
-
-const main = async () => {
-    await productManager.inicializar()
-    await cartsManager.inicializar()
-}
-
-main()
 
 module.exports = router;
