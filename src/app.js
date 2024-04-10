@@ -8,7 +8,6 @@ const { Server } = require('socket.io')
 const productRouter = require('./routes/products.router')
 const cartRouter = require('./routes/carts.router')
 const viewsRouter = require('./routes/views.router')
-const realTimeProductsRouter = require('./routes/realTimeProducts.router')
 
 //definir los Managers y Modelos
 const fsProductManager = require('./dao/fsManagers/ProductManager')
@@ -33,7 +32,6 @@ app.set('view engine', 'handlebars')
 app.use('/api/products', productRouter)
 app.use('/api/carts', cartRouter)
 app.use('/', viewsRouter)
-app.use('/realtimeproducts', realTimeProductsRouter)
 
 const main = async () => {
 
@@ -43,22 +41,24 @@ const main = async () => {
             dbName: 'ecommerce'
         })    
 
-        //configurar cuál de los dos Managers está activo, son excluyentes
-//Manager con FileSystem
-// const productManager = new fsProductManager()
-// await productManager.inicializar()
-// app.set('productManager', productManager)
-// const cartManager = new fsCartManager()
-// await cartManager.inicializar()
-// app.set('cartManager', cartManager)
-//Manager con DataBaseSystem
-const productManager = new dbProductManager()
-await productManager.inicializar()
-app.set('productManager', productManager)
-const cartManager = new dbCartManager()
-await cartManager.inicializar()
-app.set('cartManager', cartManager)
+    //configurar cuál de los dos Managers está activo, son excluyentes
+    //Manager con FileSystem
+    // const fileNameProducts = `${__dirname}/../products.json`
+    // const productManager = new fsProductManager(fileNameProducts)
+    // await productManager.inicializar()
+    // app.set('productManager', productManager)
+    // const fileNameCarts = `${__dirname}/../carts.json`
+    // const cartManager = new fsCartManager(fileNameCarts)
+    // await cartManager.inicializar()
+    // app.set('cartManager', cartManager)    
 
+    //Manager con DataBaseSystem
+    const productManager = new dbProductManager()
+    await productManager.inicializar()
+    app.set('productManager', productManager)
+    const cartManager = new dbCartManager()
+    await cartManager.inicializar()
+    app.set('cartManager', cartManager)
 
     //crear un servidor HTTP
     const httpServer = app.listen(8080, () => {

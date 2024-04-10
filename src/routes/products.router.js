@@ -195,7 +195,7 @@ router.put('/:pid', validateUpdateProduct, async (req, res) => {
     try {
         const productManager = req.app.get('productManager')
         const prodId = +req.params.pid
-        const product = req.body
+        const productUpdated = req.body
 
         //valido el ID que hasta el momento no fue evaluado
         if (isNaN(prodId)) {
@@ -204,10 +204,16 @@ router.put('/:pid', validateUpdateProduct, async (req, res) => {
             return
         }
 
-        await productManager.updateProduct(product, prodId)
+        const productActual = await productManager.getProductById(prodId)
+        if (productActual) {
+            await productManager.updateProduct(productUpdated, prodId)
 
-        // HTTP 200 OK => producto modificado exitosamente
-        res.status(200).json(product)
+            // HTTP 200 OK => producto modificado exitosamente
+            res.status(200).json(productUpdated)
+        }
+        else
+            // HTTP 404 => el ID es válido, pero no se encontró ese producto
+            res.status(404).json(`El producto con código '${prodId}' no existe.`)
     }
     catch (err) {
         return res.status(500).json({ message: err.message })
@@ -225,10 +231,16 @@ router.delete('/:pid', async (req, res) => {
             return
         }
 
-        await productManager.deleteProduct(prodId)
+        const product = await productManager.getProductById(prodId)
+        if (product) {
+            await productManager.deleteProduct(prodId)
 
-        // HTTP 200 OK => producto eliminado exitosamente
-        res.status(200).json(`El producto con código '${prodId}' se eliminó exitosamente.`)
+            // HTTP 200 OK => producto eliminado exitosamente
+            res.status(200).json(`El producto con código '${prodId}' se eliminó exitosamente.`)
+        }
+        else
+            // HTTP 404 => el ID es válido, pero no se encontró ese producto
+            res.status(404).json(`El producto con código '${prodId}' no existe.`)
     }
     catch (err) {
         return res.status(500).json({ message: err.message })

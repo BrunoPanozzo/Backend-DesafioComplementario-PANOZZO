@@ -4,14 +4,10 @@ const ProductManager = require('../dao/fsManagers/ProductManager')
 
 const router = Router()
 
-const fileNameCarts = `${__dirname}/../../carts.json`
-const cartsManager = new CartManager(fileNameCarts)
-const fileNameProducts = `${__dirname}/../../products.json`
-const productManager = new ProductManager(fileNameProducts)
-
 //middlewares
 
 async function validateNewCart(req, res, next) {
+    const productManager = req.app.get('productManager')
     const { products } = req.body    
 
     //valido que cada producto que quiero agregar a un carrito exista y que su quantity sea un valor positivo
@@ -32,9 +28,10 @@ async function validateNewCart(req, res, next) {
 }
 
 async function validateCart(req, res, next) {
+    const cartManager = req.app.get('cartManager')
     let cartId = +req.params.cid;
 
-    const cart = cartsManager.getCartById(cartId)    
+    const cart = cartManager.getCartById(cartId)    
     if (!cart) {
         res.status(400).json({ error: `No existe el carrito con ID '${cartId}'.`})
         return
@@ -44,6 +41,7 @@ async function validateCart(req, res, next) {
 }
 
 async function validateProduct(req, res, next) {
+    const productManager = req.app.get('productManager')
     let prodId = +req.params.pid;
 
     const prod = productManager.getProductById(prodId)  
@@ -57,7 +55,23 @@ async function validateProduct(req, res, next) {
 
 //endpoints
 
+router.get('/', async (req, res) => {
+    try {
+        const cartManager = req.app.get('cartManager')
+        const carts = await cartManager.getCarts()      
+        // HTTP 200 OK
+        res.status(200).json(carts)  
+        return
+    }
+    catch (err) {
+        return res.status(400).json({
+            message: err.message
+        })
+    }
+})
+
 router.get('/:cid', async (req, res) => {
+    const cartManager = req.app.get('cartManager')
     let cartId = +req.params.cid;
 
     if (isNaN(cartId)) {
@@ -66,7 +80,7 @@ router.get('/:cid', async (req, res) => {
         return
     }
 
-    let cartById = await cartsManager.getCartById(cartId);
+    let cartById = await cartManager.getCartById(cartId);
 
     if (cartById) 
         // HTTP 200 OK => se encontró el carrito
@@ -79,20 +93,22 @@ router.get('/:cid', async (req, res) => {
 })
 
 router.post('/', validateNewCart, async (req, res) => {
+    const cartManager = req.app.get('cartManager')
     const { products } = req.body;
 
-    await cartsManager.addCart(products);
+    await cartManager.addCart(products);
 
     // HTTP 201 OK => carrito creado exitosamente
     res.status(201).json(`Carrito creado exitosamente.`)
 })
 
 router.post('/:cid/product/:pid', validateCart, validateProduct, async (req, res) => {
+    const cartManager = req.app.get('cartManager')
     let cartId = +req.params.cid;
     let prodId = +req.params.pid;
     let quantity = 1;
 
-    await cartsManager.addProductToCart(cartId, prodId, quantity);
+    await cartManager.addProductToCart(cartId, prodId, quantity);
 
     // HTTP 200 OK => carrito modificado exitosamente
     res.status(200).json(`Se agregaron ${quantity} producto/s con ID ${prodId} al carrito con ID ${cartId}.`)
