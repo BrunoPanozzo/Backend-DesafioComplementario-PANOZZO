@@ -14,7 +14,7 @@ class CartManager {
             throw new Error('Error al conectarse a la BD de mongodb!')
         }
         else {
-            const carts = await this.getCarts()
+            const carts = await this.getCarts() 
             CartManager.#lastID_Cart = this.#getHigherID(carts)
         }
     }
@@ -47,7 +47,7 @@ class CartManager {
         }
     }
 
-    getCartByCId = async (cartId) => {
+    getCartById = async (cartId) => {
         const cart = await cartModel.findOne({id:cartId})
         if (cart)
             return cart
@@ -58,10 +58,37 @@ class CartManager {
     }
 
     addCart = async (products) => {
+        console.log(products)
+
         let nuevoCarrito = await cartModel.create({
             id: this.#getNuevoID(),
             products
         })
+        console.log(nuevoCarrito)
+    }
+
+    //agregar un producto al array de productos de un carrito determinado
+    addProductToCart = async (cartId, prodId, quantity) => {
+        //obtengo un carrito
+        const cart = await this.getCartById(cartId)
+        //obtengo los productos del carrito        
+        const productsFromCart = cart.products
+        const productIndex = productsFromCart.findIndex(item => item.id === prodId)
+        if (productIndex != -1) {
+            //existe el producto en el carrito, actualizo sólo su cantidad
+            productsFromCart[productIndex].quantity += quantity
+        }
+        else {
+            //nop existe el producto en el carito, debo crear la entrada completa
+            const newProduct = {
+                id: prodId,
+                quantity: quantity
+            }
+            productsFromCart.push(newProduct)
+        }
+        //
+        // await cart.save()
+        await cartModel.updateOne({id : cartId}, cart)
     }
 
     deleteProductToCart = async (cartId) => {

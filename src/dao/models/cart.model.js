@@ -8,7 +8,7 @@ const cartSchema = new mongoose.Schema({
         required : true,
         unique: true
     },
-    products: [{ product: String, quantity: Number }]    
+    products: [{ id: Number, quantity: Number }]    
 })
 
 module.exports = mongoose.model(cartsCollection, cartSchema);
