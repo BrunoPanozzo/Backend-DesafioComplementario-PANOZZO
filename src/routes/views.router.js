@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
             title: 'All Products',
             scripts: ['allProducts.js'],
             styles: ['home.css', 'allProducts.css'],
-            useWS: true,
+            useWS: false,
             filteredProducts
         }
 
@@ -37,7 +37,7 @@ router.get('/realtimeproducts', async (req, res) => {
         title: 'Real Time Products', 
         scripts: ['allProducts.js'],
         styles: ['home.css', 'allProducts.css'],
-        useWS: true,
+        useWS: false,
         allProducts
     }
     
@@ -49,10 +49,23 @@ router.get('/products/create', async (req, res) => {
         title: 'Create Product',
         scripts: ['createProduct.js'],
         styles: ['home.css'],
-        useWS: true
+        useWS: false
     }
 
     res.render('createProduct', data)
+})
+
+
+router.get('/chat', (_, res) => {
+    const data = {
+        title: 'Aplicación de chat',
+        useWS: true,
+        useSweetAlert: true,        
+        scripts: ['message.js'],
+        styles: ['home.css']
+    }
+
+    res.render('message', data)
 })
 
 module.exports = router;

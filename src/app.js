@@ -15,6 +15,8 @@ const fsCartManager = require('./dao/fsManagers/CartManager')
 const dbProductManager = require('./dao/dbManagers/ProductManager')
 const dbCartManager = require('./dao/dbManagers/CartManager')
 
+const dbMessageManager = require('./dao/dbManagers/MessageManager')
+
 //instanciar mi app
 const app = express()
 
@@ -60,6 +62,11 @@ const main = async () => {
     await cartManager.inicializar()
     app.set('cartManager', cartManager)
 
+    //Manager del chat
+    const messageManager = new dbMessageManager()
+    app.set('messageManager', messageManager)
+    
+
     //crear un servidor HTTP
     const httpServer = app.listen(8080, () => {
         console.log('Servidor listo escuchando en el puerto 8080')
@@ -67,27 +74,62 @@ const main = async () => {
 
     //crear un servidor WS
     const io = new Server(httpServer)
-    app.set('io', io)
+    // app.set('io', io)
+
+    //conexion de un nuevo cliente a mi servidor WS
+    io.on('connection', (clientSocket) => {
+        console.log(`Cliente conectado con ID: ${clientSocket.id}`)
+
+        // clientSocket.on('saludo', (data) => {
+        //     console.log(data)
+        // })
+
+        // clientSocket.on('deleteProduct', async (idProd) => {
+        //     const id = parseInt(idProd)
+        //     await productManager.deleteProduct(id)
+            
+        //     console.log(`El producto con código '${id}' se eliminó exitosamente.`)
+        //     //avisar a todos los clientes
+        //     io.emit('deleteProduct', idProd)
+            
+        // })
+
+        //sección de MESSAGES
+        let messagesHistory = []
+
+        // enviar todos los mensajes hasta este momento
+        for (const data of messagesHistory) {
+            clientSocket.emit('message', data)
+        }
+
+        clientSocket.on('message', async data => {
+            messagesHistory.push(data)
+
+            try {
+                const { user, message } = data
+                const chatMessage = new chatModel({
+                    user,
+                    message
+                })
+
+                // Se persiste en Mongo
+                await chatMessage.save()
+
+                console.log(`Mensaje de ${user} persistido en la base de datos.`)
+            } catch (error) {
+                console.error('Error al persistir el mensaje:', error)
+            }
+
+            io.emit('message', data)
+        })
+
+        clientSocket.on('authenticated', data => {
+            // notificar a los otros usuarios que se conecto
+            clientSocket.broadcast.emit('newUserConnected', data)  
+        })
+
+
+    })
 }
 
 main()
-
-// //conexion de un nuevo cliente a mi servidor WS
-// io.on('connection', (clientSocket) => {
-//     console.log(`Cliente conectado con ID: ${clientSocket.id}`)
-
-//     clientSocket.on('saludo', (data) => {
-//         console.log(data)
-//     })
-    
-//     clientSocket.on('deleteProduct', async (idProd) => {
-
-//         const id = parseInt(idProd)
-//         await productManager.deleteProduct(id)
-
-//         console.log(`El producto con código '${id}' se eliminó exitosamente.`)
-//         //avisar a todos los clientes
-//         io.emit('deleteProduct', idProd)
-
-//     })
-// })

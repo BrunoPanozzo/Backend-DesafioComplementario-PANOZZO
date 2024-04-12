@@ -11,8 +11,8 @@ async function validateNewCart(req, res, next) {
     const { products } = req.body
 
     //valido que cada producto que quiero agregar a un carrito exista y que su quantity sea un valor positivo
-    products.forEach(producto => {
-        const prod = productManager.getProductById(producto.id)
+    products.forEach(async producto => {
+        const prod = await productManager.getProductById(producto.id)
         if (!prod) {
             res.status(400).json({ error: `No se puede crear el carrito porque no existe el producto con ID '${producto.id}'.` })
             return
@@ -31,7 +31,13 @@ async function validateCart(req, res, next) {
     const cartManager = req.app.get('cartManager')
     let cartId = +req.params.cid;
 
-    const cart = cartManager.getCartById(cartId)
+    if (isNaN(cartId)) {
+        // HTTP 400 => hay un error en el request o alguno de sus parámetros
+        res.status(400).json({ error: "Formato inválido del ID del carrito." })
+        return
+    }
+
+    const cart = await cartManager.getCartById(cartId)
     if (!cart) {
         res.status(400).json({ error: `No existe el carrito con ID '${cartId}'.` })
         return
@@ -44,7 +50,7 @@ async function validateProduct(req, res, next) {
     const productManager = req.app.get('productManager')
     let prodId = +req.params.pid;
 
-    const prod = productManager.getProductById(prodId)
+    const prod = await productManager.getProductById(prodId)
     if (!prod) {
         res.status(400).json({ error: `No existe el producto con ID '${prodId}'.` })
         return
@@ -68,16 +74,10 @@ router.get('/', async (req, res) => {
     }
 })
 
-router.get('/:cid', async (req, res) => {
+router.get('/:cid', validateCart, async (req, res) => {
     try {
         const cartManager = req.app.get('cartManager')
         let cartId = +req.params.cid;
-
-        if (isNaN(cartId)) {
-            // HTTP 400 => hay un error en el request o alguno de sus parámetros
-            res.status(400).json({ error: "Formato invalido del ID del carrito." })
-            return
-        }
 
         let cartById = await cartManager.getCartById(cartId);
 
@@ -128,5 +128,22 @@ router.post('/:cid/product/:pid', validateCart, validateProduct, async (req, res
         return res.status(500).json({ message: err.message })
     }
 })
+
+router.delete('/:cid', validateCart, async (req, res) => {
+    try {
+        const cartManager = req.app.get('cartManager')
+        let cartId = +req.params.cid;
+
+        await cartManager.deleteCart(cartId)
+
+        // HTTP 200 OK
+        res.status(200).json(`Carrito borrado exitosamente.`)  
+    }
+    catch (err) {
+        return res.status(500).json({ message: err.message })
+    }
+})
+
+
 
 module.exports = router;

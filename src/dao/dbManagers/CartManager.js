@@ -58,13 +58,11 @@ class CartManager {
     }
 
     addCart = async (products) => {
-        console.log(products)
-
         let nuevoCarrito = await cartModel.create({
             id: this.#getNuevoID(),
             products
         })
-        console.log(nuevoCarrito)
+        // console.log(nuevoCarrito)
     }
 
     //agregar un producto al array de productos de un carrito determinado
@@ -91,8 +89,8 @@ class CartManager {
         await cartModel.updateOne({id : cartId}, cart)
     }
 
-    deleteProductToCart = async (cartId) => {
-        let result = await cartModel.deleteOne({ id: cartId })
+    deleteCart = async (cartId) => {
+        await cartModel.deleteOne({ id: cartId })
     }
 }
 

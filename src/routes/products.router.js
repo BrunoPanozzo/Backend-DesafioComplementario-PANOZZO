@@ -45,7 +45,7 @@ async function validateUpdateProduct(req, res, next) {
     const product = req.body
 
     //primero debo verificar que el producto exista en mi array de todos los productos
-    const prod = productManager.getProductById(prodId)
+    const prod = await productManager.getProductById(prodId)
     if (!prod) {
         // HTTP 404 => no existe el producto
         res.status(404).json({ error: `El producto con ID '${prodId}' no se puede modificar porque no existe.` })
@@ -78,6 +78,30 @@ async function validateUpdateProduct(req, res, next) {
     res.status(400).json({ error: "El producto que se quiere modificar posee algún campo inválido." })
 }
 
+
+async function validateProduct(req, res, next) {
+    const productManager = req.app.get('productManager')
+    let prodId = +req.params.pid;
+
+    if (isNaN(prodId)) {
+        // HTTP 400 => hay un error en el request o alguno de sus parámetros
+        res.status(400).json({ error: "Formato inválido del productID." })
+        return
+    }
+        
+    //primero debo verificar que el producto exista en mi array de todos los productos
+    const prod = await productManager.getProductById(prodId)
+    if (!prod) {
+        // HTTP 404 => no existe el producto
+        res.status(404).json({ error: `El producto con ID '${prodId}' no existe.` })
+        return
+    }
+
+    //exito, continuo al endpoint
+    return next()
+}
+
+
 //endpoints
 
 router.get('/', async (req, res) => {
@@ -106,7 +130,7 @@ router.get('/', async (req, res) => {
             title: 'All Products',
             scripts: ['allProducts.js'],
             styles: ['home.css', 'allProducts.css'],
-            useWS: true,
+            useWS: false,
             filteredProducts
         }
 
@@ -120,16 +144,10 @@ router.get('/', async (req, res) => {
     }
 })
 
-router.get('/:pid', async (req, res) => {
+router.get('/:pid', validateProduct, async (req, res) => {
     try {
         const productManager = req.app.get('productManager')
         const prodId = +req.params.pid
-
-        if (isNaN(prodId)) {
-            // HTTP 400 => hay un error en el request o alguno de sus parámetros
-            res.status(400).json({ error: "Formato inválido del productID." })
-            return
-        }
 
         const product = await productManager.getProductById(prodId)
 
@@ -220,16 +238,10 @@ router.put('/:pid', validateUpdateProduct, async (req, res) => {
     }
 })
 
-router.delete('/:pid', async (req, res) => {
+router.delete('/:pid', validateProduct, async (req, res) => {
     try {
         const productManager = req.app.get('productManager')
-        const prodId = +req.params.pid
-
-        if (isNaN(prodId)) {
-            // HTTP 400 => hay un error en el request o alguno de sus parámetros
-            res.status(400).json({ error: "Formato inválido del productID." })
-            return
-        }
+        const prodId = +req.params.pid        
 
         const product = await productManager.getProductById(prodId)
         if (product) {
