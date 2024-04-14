@@ -64,9 +64,8 @@ const main = async () => {
 
     //Manager del chat
     const messageManager = new dbMessageManager()
-    app.set('messageManager', messageManager)
+    // app.set('messageManager', messageManager)
     
-
     //crear un servidor HTTP
     const httpServer = app.listen(8080, () => {
         console.log('Servidor listo escuchando en el puerto 8080')
@@ -76,9 +75,11 @@ const main = async () => {
     const io = new Server(httpServer)
     // app.set('io', io)
 
+    let messagesHistory = []
+
     //conexion de un nuevo cliente a mi servidor WS
     io.on('connection', (clientSocket) => {
-        console.log(`Cliente conectado con ID: ${clientSocket.id}`)
+        // console.log(`Cliente conectado con ID: ${clientSocket.id}`)
 
         // clientSocket.on('saludo', (data) => {
         //     console.log(data)
@@ -95,8 +96,6 @@ const main = async () => {
         // })
 
         //sección de MESSAGES
-        let messagesHistory = []
-
         // enviar todos los mensajes hasta este momento
         for (const data of messagesHistory) {
             clientSocket.emit('message', data)
@@ -104,31 +103,14 @@ const main = async () => {
 
         clientSocket.on('message', async data => {
             messagesHistory.push(data)
-
-            try {
-                const { user, message } = data
-                const chatMessage = new chatModel({
-                    user,
-                    message
-                })
-
-                // Se persiste en Mongo
-                await chatMessage.save()
-
-                console.log(`Mensaje de ${user} persistido en la base de datos.`)
-            } catch (error) {
-                console.error('Error al persistir el mensaje:', error)
-            }
-
+            messageManager.addMessage(data)
             io.emit('message', data)
         })
 
-        clientSocket.on('authenticated', data => {
+        clientSocket.on('userAuthenticated', data => {
             // notificar a los otros usuarios que se conecto
             clientSocket.broadcast.emit('newUserConnected', data)  
         })
-
-
     })
 }
 
